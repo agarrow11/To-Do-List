@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- saved from url=(0051)file:///C:/Users/38672/Downloads/todo_final_v6.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -550,5 +549,38 @@ function addPdItem(){
 document.getElementById('pd-inp').addEventListener('keydown',e=>{if(e.key==='Enter')addPdItem();if(e.key==='Escape')togglePdInput();});
 </script>
 
+const GITHUB_TOKEN = localStorage.getItem('gh_token');
+if (!GITHUB_TOKEN) {
+  const t = prompt('Enter your GitHub token:');
+  localStorage.setItem('gh_token', t);
+  location.reload();
+}
+const REPO = 'agarrow11/To-Do-List';
+const FILE_PATH = 'index.html';
+
+async function autoSave() {
+  const content = btoa(unescape(encodeURIComponent(document.documentElement.outerHTML)));
+  
+  // Get the current file SHA (required for updates)
+  const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`, {
+    headers: { Authorization: `token ${GITHUB_TOKEN}` }
+  });
+  const { sha } = await res.json();
+
+  // Commit the updated file
+  await fetch(`https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`, {
+    method: 'PUT',
+    headers: { Authorization: `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: 'Auto-save',
+      content,
+      sha
+    })
+  });
+}
+
+// Debounce: save 2s after last change
+let timer;
+document.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(autoSave, 2000); });
 
 </body></html>
