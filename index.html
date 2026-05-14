@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<!-- saved from url=(0051)file:///C:/Users/38672/Downloads/todo_final_v6.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consolidated To-Do List</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;font-size:14px;color:#1a1a1a;background:#f9f9f7;padding:24px;margin:0 auto;max-width:1200px}
+h1{font-size:20px;font-weight:600;margin-bottom:4px}
+.date{font-size:12px;color:#888;margin-bottom:16px}
+.app-layout{display:grid;grid-template-columns:1.6fr 1fr;gap:24px;align-items:start}
+.left-col,.right-col{min-width:0}
+.prog-label{font-size:13px;color:#666;margin-bottom:6px}
+.prog-track{background:#e8e8e4;border-radius:99px;height:7px;margin-bottom:12px;overflow:hidden}
+.prog-fill{height:7px;border-radius:99px;background:#3b6d11;transition:width 0.3s}
+.toolbar{display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.toolbar select{font-size:12px;padding:0 6px;height:30px;border-radius:7px;border:0.5px solid #bbb;background:#fff;color:#1a1a1a;min-width:120px;max-width:160px}
+.toolbar input{flex:1;min-width:80px;font-size:12px;height:30px;padding:0 8px;border-radius:7px;border:0.5px solid #bbb;background:#fff;color:#1a1a1a}
+.toolbar input::placeholder{color:#aaa}
+.tbtn{height:30px;padding:0 10px;border-radius:7px;border:0.5px solid #bbb;background:#fff;color:#1a1a1a;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:background .1s}
+.tbtn:hover{background:#f0f0ec}
+.tbtn.sec-btn{border-style:dashed}
+.divider{width:1px;height:20px;background:#ddd}
+.new-sec-row{display:none;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.new-sec-row.visible{display:flex}
+.new-sec-row input{flex:1;min-width:120px;font-size:12px;height:30px;padding:0 8px;border-radius:7px;border:0.5px solid #bbb;background:#fff;color:#1a1a1a}
+.sec{margin-bottom:16px;background:#fff;border-radius:10px;border:0.5px solid #ddd;overflow:hidden;transition:opacity .3s}
+.sec.sec-hidden{display:none}
+.sec-head{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.07em;padding:8px 12px;border-bottom:0.5px solid #eee;background:#fafaf8}
+.drop-zone{min-height:6px;transition:all .15s}
+.drop-zone.drag-over{background:#dbeafe;min-height:36px;border:1px dashed #93c5fd;margin:4px 8px;border-radius:6px}
+.item{display:flex;align-items:flex-start;gap:8px;padding:7px 12px;transition:background .1s;border-bottom:0.5px solid #f2f2f0;cursor:grab;user-select:none}
+.item:last-of-type{border-bottom:none}
+.item:hover{background:#f5f5f2}
+.item:hover .drag-handle,.item:hover .move-btn,.item:hover .del-btn{opacity:1}
+.item.dragging{opacity:.35;cursor:grabbing}
+.item.done{display:none}
+.item.done.show-done{display:flex;opacity:.4}
+.item.done.show-done .lbl{text-decoration:line-through;color:#aaa}
+.item.done.show-done .box{background:#3b6d11;border-color:#3b6d11}
+.item.done.show-done .ck{display:block}
+@keyframes flash{0%{background:#dbeafe}100%{background:transparent}}
+@keyframes fadeout{0%{opacity:1;max-height:48px}100%{opacity:0;max-height:0;padding-top:0;padding-bottom:0;border:none}}
+.item.new-flash{animation:flash .7s ease}
+.item.deleting{animation:fadeout .25s ease forwards;overflow:hidden}
+.drag-handle{color:#bbb;font-size:13px;margin-top:2px;cursor:grab;flex-shrink:0;opacity:0;transition:opacity .1s}
+.box{width:15px;height:15px;min-width:15px;border-radius:3px;border:1.5px solid #bbb;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;cursor:pointer}
+.ck{display:none;color:#fff;font-size:10px;font-weight:700}
+.lbl{font-size:13px;line-height:1.5;color:#1a1a1a;flex:1;cursor:pointer}
+.pri-wrap{display:flex;gap:2px;margin-top:1px;flex-shrink:0}
+.pri-btn{width:18px;height:18px;border-radius:3px;border:0.5px solid #ddd;background:#f5f5f2;font-size:10px;font-weight:600;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.pri-btn:hover{border-color:#bbb}
+.pri-btn.p1.active{background:#FCEBEB;border-color:#E24B4A;color:#A32D2D}
+.pri-btn.p2.active{background:#FAEEDA;border-color:#BA7517;color:#854F0B}
+.pri-btn.p3.active{background:#EAF3DE;border-color:#639922;color:#3B6D11}
+.move-btn{opacity:0;width:18px;height:18px;border-radius:3px;border:0.5px solid #ddd;background:#f5f5f2;font-size:12px;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;margin-top:1px}
+.move-btn:hover{background:#fff;border-color:#bbb;color:#1a1a1a}
+.del-btn{opacity:0;width:18px;height:18px;border-radius:3px;border:0.5px solid #ddd;background:#f5f5f2;font-size:12px;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;margin-top:1px}
+.del-btn:hover{background:#FCEBEB;border-color:#E24B4A;color:#A32D2D}
+#global-popover{display:none;position:absolute;z-index:9999;background:#fff;border:0.5px solid #bbb;border-radius:10px;padding:5px;min-width:210px;max-height:300px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+#global-popover.open{display:block}
+.move-popover-label{font-size:10px;color:#aaa;padding:2px 6px 5px;text-transform:uppercase;letter-spacing:.05em}
+.move-option{font-size:12px;color:#1a1a1a;padding:5px 7px;border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.move-option:hover{background:#f5f5f2}
+.move-option.current{color:#bbb;cursor:default;font-style:italic}
+.move-option.current:hover{background:none}
+.move-option.sep{border-top:0.5px solid #eee;margin-top:3px;padding-top:6px;font-size:10px;color:#aaa;text-transform:uppercase;cursor:default;pointer-events:none}
+.move-option.sep:hover{background:none}
+.completed-banner{text-align:center;padding:1.5rem 1rem;color:#888;font-size:13px;display:none}
+.completed-banner .icon{font-size:28px;margin-bottom:6px;color:#3b6d11}
+.right-section-header{font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;padding-bottom:6px;border-bottom:0.5px solid #ddd;display:flex;align-items:center;gap:6px}
+.dr-card{background:#fff;border:0.5px solid #ddd;border-radius:10px;margin-bottom:10px;overflow:visible}
+.dr-head{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:0.5px solid #eee;border-radius:10px 10px 0 0}
+.dr-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.dr-name{font-size:13px;font-weight:600;color:#1a1a1a}
+.dr-add{height:24px;padding:0 8px;border-radius:7px;border:0.5px solid #ddd;background:none;font-size:11px;color:#888;cursor:pointer;display:inline-flex;align-items:center;gap:3px;transition:background .1s}
+.dr-add:hover{background:#f5f5f2}
+.dr-body{padding:4px 8px 6px;min-height:32px;border-radius:0 0 10px 10px;transition:background .15s}
+.dr-body.drag-over{background:#dbeafe;outline:1px dashed #93c5fd;outline-offset:-2px}
+.dr-item{display:flex;align-items:flex-start;gap:7px;padding:4px;border-radius:6px;transition:background .1s}
+.dr-item:hover{background:#f5f5f2}
+.dr-item:hover .dr-del{opacity:1}
+.dr-bullet{width:5px;height:5px;border-radius:50%;background:#ccc;margin-top:6px;flex-shrink:0}
+.dr-lbl{font-size:12px;color:#1a1a1a;line-height:1.5;flex:1}
+.dr-del{opacity:0;width:16px;height:16px;border-radius:3px;border:none;background:none;color:#aaa;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .1s;flex-shrink:0;padding:0;margin-top:1px}
+.dr-del:hover{color:#e24b4a;background:#fcebeb}
+.dr-input-row{display:flex;gap:5px;padding:4px}
+.dr-input-row input{flex:1;font-size:12px;height:26px;padding:0 7px;border-radius:6px;border:0.5px solid #bbb;background:#fff;color:#1a1a1a}
+.dr-input-row input::placeholder{color:#aaa}
+.dr-input-row button{height:26px;padding:0 10px;border-radius:6px;border:0.5px solid #bbb;background:#fff;color:#1a1a1a;font-size:11px;cursor:pointer}
+.dr-input-row button:hover{background:#f0f0ec}
+.dr-empty{font-size:12px;color:#aaa;padding:6px 4px;font-style:italic}
+.pd-card{background:#fff;border:0.5px solid #ddd;border-radius:10px;overflow:visible}
+.pd-body{padding:4px 8px 6px;min-height:32px;border-radius:10px;transition:background .15s}
+.pd-body.drag-over{background:#dbeafe;outline:1px dashed #93c5fd;outline-offset:-2px}
+.pd-footer{padding:6px 8px;border-top:0.5px solid #eee}
+@media print{
+  body{background:#fff;padding:16px;max-width:none}
+  .app-layout{grid-template-columns:1fr}
+  .toolbar,.new-sec-row,.move-btn,.del-btn,.drag-handle,#global-popover{display:none!important}
+  .sec{border:1px solid #ddd;break-inside:avoid}
+  .item.done{display:flex!important;opacity:.4}
+  .sec.sec-hidden{display:block!important}
+}
+</style>
+</head>
+<body>
+
+<h1>Consolidated To-Do List</h1>
+<div class="date">Generated May 8, 2026</div>
+<div id="global-popover"></div>
+
+<div class="app-layout">
+<div class="left-col">
+  <p class="prog-label" id="plabel">0 of 75 completed</p>
+  <div class="prog-track"><div class="prog-fill" id="pbar" style="width:0%"></div></div>
+  <div class="toolbar">
+    <select id="sec-pick" aria-label="Choose section"><option value="0">Communications / Emails</option><option value="1">People / Meetings</option><option value="2">Data / Analytics Work</option><option value="3">Project / Workstream Items</option><option value="4">Personal / Professional Development</option><option value="5">Meeting Notes: Emily, Kendra &amp; Kara</option></select>
+    <input type="text" id="new-task-input" placeholder="New task..." aria-label="New task">
+    <button class="tbtn" onclick="addTask()">+ Add</button>
+    <div class="divider"></div>
+    <button class="tbtn sec-btn" onclick="toggleNewSection()">+ Add section</button>
+    <button class="tbtn" id="toggle-btn" onclick="toggleShowDone()">👁 Show done</button>
+  </div>
+  <div class="new-sec-row" id="new-sec-row">
+    <input type="text" id="new-sec-input" placeholder="Section name...">
+    <button class="tbtn" onclick="addSection()">✓ Create</button>
+    <button class="tbtn" onclick="toggleNewSection()">✕ Cancel</button>
+  </div>
+  <div id="todo-root"><div class="sec"><div class="sec-head">Communications / Emails</div><div class="item" id="r-c1" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Respond to Mariana Souto</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-c1" title="Priority 1">1</button><button class="pri-btn p2" id="p2-c1" title="Priority 2">2</button><button class="pri-btn p3" id="p3-c1" title="Priority 3">3</button></div><button class="move-btn" id="mb-c1" title="Move task">⇕</button><button class="del-btn" id="db-c1" title="Delete task">🗑</button></div><div class="item" id="r-c2" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Respond to Dorota Moronska</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-c2" title="Priority 1">1</button><button class="pri-btn p2" id="p2-c2" title="Priority 2">2</button><button class="pri-btn p3" id="p3-c2" title="Priority 3">3</button></div><button class="move-btn" id="mb-c2" title="Move task">⇕</button><button class="del-btn" id="db-c2" title="Delete task">🗑</button></div><div class="item" id="r-c3" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Email Emily re: AI / Archie experience — 1) What went wrong? 2) What would we have done better?</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-c3" title="Priority 1">1</button><button class="pri-btn p2" id="p2-c3" title="Priority 2">2</button><button class="pri-btn p3" id="p3-c3" title="Priority 3">3</button></div><button class="move-btn" id="mb-c3" title="Move task">⇕</button><button class="del-btn" id="db-c3" title="Delete task">🗑</button></div><div class="item" id="r-c4" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Mallory questions</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-c4" title="Priority 1">1</button><button class="pri-btn p2" id="p2-c4" title="Priority 2">2</button><button class="pri-btn p3" id="p3-c4" title="Priority 3">3</button></div><button class="move-btn" id="mb-c4" title="Move task">⇕</button><button class="del-btn" id="db-c4" title="Delete task">🗑</button></div><div class="item" id="r-c4a" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Is there N threshold functionality in Claude?</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-c4a" title="Priority 1">1</button><button class="pri-btn p2" id="p2-c4a" title="Priority 2">2</button><button class="pri-btn p3" id="p3-c4a" title="Priority 3">3</button></div><button class="move-btn" id="mb-c4a" title="Move task">⇕</button><button class="del-btn" id="db-c4a" title="Delete task">🗑</button></div><div class="item" id="r-c4b" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Security options in Claude (reference conversation with Nick)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-c4b" title="Priority 1">1</button><button class="pri-btn p2" id="p2-c4b" title="Priority 2">2</button><button class="pri-btn p3" id="p3-c4b" title="Priority 3">3</button></div><button class="move-btn" id="mb-c4b" title="Move task">⇕</button><button class="del-btn" id="db-c4b" title="Delete task">🗑</button></div><div class="item" id="r-c4c" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">What are the identifiability considerations we need to have?</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-c4c" title="Priority 1">1</button><button class="pri-btn p2" id="p2-c4c" title="Priority 2">2</button><button class="pri-btn p3" id="p3-c4c" title="Priority 3">3</button></div><button class="move-btn" id="mb-c4c" title="Move task">⇕</button><button class="del-btn" id="db-c4c" title="Delete task">🗑</button></div><div class="item" id="r-c4d" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Do we need to go through Archie?</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-c4d" title="Priority 1">1</button><button class="pri-btn p2" id="p2-c4d" title="Priority 2">2</button><button class="pri-btn p3" id="p3-c4d" title="Priority 3">3</button></div><button class="move-btn" id="mb-c4d" title="Move task">⇕</button><button class="del-btn" id="db-c4d" title="Delete task">🗑</button></div><div class="item" id="r-c4e" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Can we lock down some pieces but not others?</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-c4e" title="Priority 1">1</button><button class="pri-btn p2" id="p2-c4e" title="Priority 2">2</button><button class="pri-btn p3" id="p3-c4e" title="Priority 3">3</button></div><button class="move-btn" id="mb-c4e" title="Move task">⇕</button><button class="del-btn" id="db-c4e" title="Delete task">🗑</button></div><div class="item" id="r-c5" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Marta — Claude skill notes, transcript &amp; recording skill</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-c5" title="Priority 1">1</button><button class="pri-btn p2" id="p2-c5" title="Priority 2">2</button><button class="pri-btn p3" id="p3-c5" title="Priority 3">3</button></div><button class="move-btn" id="mb-c5" title="Move task">⇕</button><button class="del-btn" id="db-c5" title="Delete task">🗑</button></div><div class="drop-zone"></div></div><div class="sec"><div class="sec-head">People / Meetings</div><div class="item" id="r-p1" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Time w/ Marta on Yield</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-p1" title="Priority 1">1</button><button class="pri-btn p2" id="p2-p1" title="Priority 2">2</button><button class="pri-btn p3" id="p3-p1" title="Priority 3">3</button></div><button class="move-btn" id="mb-p1" title="Move task">⇕</button><button class="del-btn" id="db-p1" title="Delete task">🗑</button></div><div class="item" id="r-p2" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">PD chats — 1) go forward if QC'd 2) Extraordinary Teaming 3) Chirag: normal hours?</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-p2" title="Priority 1">1</button><button class="pri-btn p2" id="p2-p2" title="Priority 2">2</button><button class="pri-btn p3" id="p3-p2" title="Priority 3">3</button></div><button class="move-btn" id="mb-p2" title="Move task">⇕</button><button class="del-btn" id="db-p2" title="Delete task">🗑</button></div><div class="item" id="r-p3" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Jateen — end of June, PII and risk review process</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-p3" title="Priority 1">1</button><button class="pri-btn p2" id="p2-p3" title="Priority 2">2</button><button class="pri-btn p3" id="p3-p3" title="Priority 3">3</button></div><button class="move-btn" id="mb-p3" title="Move task">⇕</button><button class="del-btn" id="db-p3" title="Delete task">🗑</button></div><div class="item" id="r-p4" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Reporting in Workday convo (w/ April)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-p4" title="Priority 1">1</button><button class="pri-btn p2" id="p2-p4" title="Priority 2">2</button><button class="pri-btn p3" id="p3-p4" title="Priority 3">3</button></div><button class="move-btn" id="mb-p4" title="Move task">⇕</button><button class="del-btn" id="db-p4" title="Delete task">🗑</button></div><div class="item" id="r-p5" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">More time with Gaurav — Alteryx &gt; SQL conversation</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-p5" title="Priority 1">1</button><button class="pri-btn p2" id="p2-p5" title="Priority 2">2</button><button class="pri-btn p3" id="p3-p5" title="Priority 3">3</button></div><button class="move-btn" id="mb-p5" title="Move task">⇕</button><button class="del-btn" id="db-p5" title="Delete task">🗑</button></div><div class="drop-zone"></div></div><div class="sec"><div class="sec-head">Data / Analytics Work</div><div class="item" id="r-d1" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Chirag</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d1" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d1" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d1" title="Priority 3">3</button></div><button class="move-btn" id="mb-d1" title="Move task">⇕</button><button class="del-btn" id="db-d1" title="Delete task">🗑</button></div><div class="item" id="r-d1a" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Tiffany request</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d1a" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d1a" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d1a" title="Priority 3">3</button></div><button class="move-btn" id="mb-d1a" title="Move task">⇕</button><button class="del-btn" id="db-d1a" title="Delete task">🗑</button></div><div class="item" id="r-d1b" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Katie request</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d1b" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d1b" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d1b" title="Priority 3">3</button></div><button class="move-btn" id="mb-d1b" title="Move task">⇕</button><button class="del-btn" id="db-d1b" title="Delete task">🗑</button></div><div class="item" id="r-d1c" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Active/on leave &amp; terminated compare</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d1c" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d1c" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d1c" title="Priority 3">3</button></div><button class="move-btn" id="mb-d1c" title="Move task">⇕</button><button class="del-btn" id="db-d1c" title="Delete task">🗑</button></div><div class="item" id="r-d1c1" draggable="true" style="padding-left: 48px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Compare to extracts</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d1c1" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d1c1" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d1c1" title="Priority 3">3</button></div><button class="move-btn" id="mb-d1c1" title="Move task">⇕</button><button class="del-btn" id="db-d1c1" title="Delete task">🗑</button></div><div class="item" id="r-d1c2" draggable="true" style="padding-left: 48px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Search</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d1c2" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d1c2" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d1c2" title="Priority 3">3</button></div><button class="move-btn" id="mb-d1c2" title="Move task">⇕</button><button class="del-btn" id="db-d1c2" title="Delete task">🗑</button></div><div class="item" id="r-d1c3" draggable="true" style="padding-left: 48px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Highlight necessary gaps</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d1c3" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d1c3" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d1c3" title="Priority 3">3</button></div><button class="move-btn" id="mb-d1c3" title="Move task">⇕</button><button class="del-btn" id="db-d1c3" title="Delete task">🗑</button></div><div class="item" id="r-d1c4" draggable="true" style="padding-left: 48px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Old questions to new question map (from export)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d1c4" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d1c4" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d1c4" title="Priority 3">3</button></div><button class="move-btn" id="mb-d1c4" title="Move task">⇕</button><button class="del-btn" id="db-d1c4" title="Delete task">🗑</button></div><div class="item" id="r-d1d" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">By office — vol/invol by level (H1/H2)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d1d" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d1d" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d1d" title="Priority 3">3</button></div><button class="move-btn" id="mb-d1d" title="Move task">⇕</button><button class="del-btn" id="db-d1d" title="Delete task">🗑</button></div><div class="item" id="r-d2" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Jagoda</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d2" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d2" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d2" title="Priority 3">3</button></div><button class="move-btn" id="mb-d2" title="Move task">⇕</button><button class="del-btn" id="db-d2" title="Delete task">🗑</button></div><div class="item" id="r-d2a" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Ratings tables from Visier</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d2a" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d2a" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d2a" title="Priority 3">3</button></div><button class="move-btn" id="mb-d2a" title="Move task">⇕</button><button class="del-btn" id="db-d2a" title="Delete task">🗑</button></div><div class="item" id="r-d2b" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Industry ratings (June)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d2b" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d2b" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d2b" title="Priority 3">3</button></div><button class="move-btn" id="mb-d2b" title="Move task">⇕</button><button class="del-btn" id="db-d2b" title="Delete task">🗑</button></div><div class="item" id="r-d2c" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">AP pipeline</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d2c" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d2c" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d2c" title="Priority 3">3</button></div><button class="move-btn" id="mb-d2c" title="Move task">⇕</button><button class="del-btn" id="db-d2c" title="Delete task">🗑</button></div><div class="item" id="r-d2d" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">MBA ratings — Chris Riha (June)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d2d" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d2d" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d2d" title="Priority 3">3</button></div><button class="move-btn" id="mb-d2d" title="Move task">⇕</button><button class="del-btn" id="db-d2d" title="Delete task">🗑</button></div><div class="item" id="r-d2e" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Brad — turnover questions</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d2e" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d2e" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d2e" title="Priority 3">3</button></div><button class="move-btn" id="mb-d2e" title="Move task">⇕</button><button class="del-btn" id="db-d2e" title="Delete task">🗑</button></div><div class="item" id="r-d3" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Szymon</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d3" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d3" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d3" title="Priority 3">3</button></div><button class="move-btn" id="mb-d3" title="Move task">⇕</button><button class="del-btn" id="db-d3" title="Delete task">🗑</button></div><div class="item" id="r-d3a" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Diversity summaries (June)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d3a" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d3a" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d3a" title="Priority 3">3</button></div><button class="move-btn" id="mb-d3a" title="Move task">⇕</button><button class="del-btn" id="db-d3a" title="Delete task">🗑</button></div><div class="item" id="r-d3b" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">EEO Reporting</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d3b" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d3b" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d3b" title="Priority 3">3</button></div><button class="move-btn" id="mb-d3b" title="Move task">⇕</button><button class="del-btn" id="db-d3b" title="Delete task">🗑</button></div><div class="item" id="r-d3c" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Membership list updates</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d3c" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d3c" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d3c" title="Priority 3">3</button></div><button class="move-btn" id="mb-d3c" title="Move task">⇕</button><button class="del-btn" id="db-d3c" title="Delete task">🗑</button></div><div class="item" id="r-d3d" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Affinity group flat file into Visier membership list connection</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d3d" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d3d" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d3d" title="Priority 3">3</button></div><button class="move-btn" id="mb-d3d" title="Move task">⇕</button><button class="del-btn" id="db-d3d" title="Delete task">🗑</button></div><div class="item" id="r-d4" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Workday Connect into Visier</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d4" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d4" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d4" title="Priority 3">3</button></div><button class="move-btn" id="mb-d4" title="Move task">⇕</button><button class="del-btn" id="db-d4" title="Delete task">🗑</button></div><div class="item" id="r-d4a" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Attrition category</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d4a" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d4a" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d4a" title="Priority 3">3</button></div><button class="move-btn" id="mb-d4a" title="Move task">⇕</button><button class="del-btn" id="db-d4a" title="Delete task">🗑</button></div><div class="item" id="r-d4b" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Diversity (affinity) groups</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d4b" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d4b" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d4b" title="Priority 3">3</button></div><button class="move-btn" id="mb-d4b" title="Move task">⇕</button><button class="del-btn" id="db-d4b" title="Delete task">🗑</button></div><div class="item" id="r-d5" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">NA leave questions</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d5" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d5" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d5" title="Priority 3">3</button></div><button class="move-btn" id="mb-d5" title="Move task">⇕</button><button class="del-btn" id="db-d5" title="Delete task">🗑</button></div><div class="item" id="r-d6" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Lauren — partner eligibility → check follow-up</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d6" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d6" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d6" title="Priority 3">3</button></div><button class="move-btn" id="mb-d6" title="Move task">⇕</button><button class="del-btn" id="db-d6" title="Delete task">🗑</button></div><div class="item" id="r-d7" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">HR slides revisions (2 slides for HRM HRBP meeting)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d7" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d7" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d7" title="Priority 3">3</button></div><button class="move-btn" id="mb-d7" title="Move task">⇕</button><button class="del-btn" id="db-d7" title="Delete task">🗑</button></div><div class="item" id="r-d8" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Hire source issue</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d8" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d8" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d8" title="Priority 3">3</button></div><button class="move-btn" id="mb-d8" title="Move task">⇕</button><button class="del-btn" id="db-d8" title="Delete task">🗑</button></div><div class="item" id="r-d9" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Claude for data dictionary?</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d9" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d9" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d9" title="Priority 3">3</button></div><button class="move-btn" id="mb-d9" title="Move task">⇕</button><button class="del-btn" id="db-d9" title="Delete task">🗑</button></div><div class="item" id="r-d10" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Update workplan</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d10" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d10" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d10" title="Priority 3">3</button></div><button class="move-btn" id="mb-d10" title="Move task">⇕</button><button class="del-btn" id="db-d10" title="Delete task">🗑</button></div><div class="item" id="r-d11" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Pull Wizard of Oz test</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d11" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d11" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d11" title="Priority 3">3</button></div><button class="move-btn" id="mb-d11" title="Move task">⇕</button><button class="del-btn" id="db-d11" title="Delete task">🗑</button></div><div class="item" id="r-d12" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Employee level table to Tolu for Extraordinary Teaming</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-d12" title="Priority 1">1</button><button class="pri-btn p2" id="p2-d12" title="Priority 2">2</button><button class="pri-btn p3" id="p3-d12" title="Priority 3">3</button></div><button class="move-btn" id="mb-d12" title="Move task">⇕</button><button class="del-btn" id="db-d12" title="Delete task">🗑</button></div><div class="drop-zone"></div></div><div class="sec"><div class="sec-head">Project / Workstream Items</div><div class="item" id="r-w1" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Departure Survey</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-w1" title="Priority 1">1</button><button class="pri-btn p2" id="p2-w1" title="Priority 2">2</button><button class="pri-btn p3" id="p3-w1" title="Priority 3">3</button></div><button class="move-btn" id="mb-w1" title="Move task">⇕</button><button class="del-btn" id="db-w1" title="Delete task">🗑</button></div><div class="item" id="r-w1a" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Slide addition: Why Now? (↑ voluntary attrition / business reasons)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-w1a" title="Priority 1">1</button><button class="pri-btn p2" id="p2-w1a" title="Priority 2">2</button><button class="pri-btn p3" id="p3-w1a" title="Priority 3">3</button></div><button class="move-btn" id="mb-w1a" title="Move task">⇕</button><button class="del-btn" id="db-w1a" title="Delete task">🗑</button></div><div class="item" id="r-w1b" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Outline Claude security options for KK, EG, KV</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-w1b" title="Priority 1">1</button><button class="pri-btn p2" id="p2-w1b" title="Priority 2">2</button><button class="pri-btn p3" id="p3-w1b" title="Priority 3">3</button></div><button class="move-btn" id="mb-w1b" title="Move task">⇕</button><button class="del-btn" id="db-w1b" title="Delete task">🗑</button></div><div class="item" id="r-w2" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">PEG Integration — scope, ownership, Deepak's role?</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-w2" title="Priority 1">1</button><button class="pri-btn p2" id="p2-w2" title="Priority 2">2</button><button class="pri-btn p3" id="p3-w2" title="Priority 3">3</button></div><button class="move-btn" id="mb-w2" title="Move task">⇕</button><button class="del-btn" id="db-w2" title="Delete task">🗑</button></div><div class="item" id="r-w3" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Book more time w/ Gaurav (attrition) → SAL</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-w3" title="Priority 1">1</button><button class="pri-btn p2" id="p2-w3" title="Priority 2">2</button><button class="pri-btn p3" id="p3-w3" title="Priority 3">3</button></div><button class="move-btn" id="mb-w3" title="Move task">⇕</button><button class="del-btn" id="db-w3" title="Delete task">🗑</button></div><div class="item" id="r-w4" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">D definition updates</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-w4" title="Priority 1">1</button><button class="pri-btn p2" id="p2-w4" title="Priority 2">2</button><button class="pri-btn p3" id="p3-w4" title="Priority 3">3</button></div><button class="move-btn" id="mb-w4" title="Move task">⇕</button><button class="del-btn" id="db-w4" title="Delete task">🗑</button></div><div class="item" id="r-w4a" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Leave (quick wins)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-w4a" title="Priority 1">1</button><button class="pri-btn p2" id="p2-w4a" title="Priority 2">2</button><button class="pri-btn p3" id="p3-w4a" title="Priority 3">3</button></div><button class="move-btn" id="mb-w4a" title="Move task">⇕</button><button class="del-btn" id="db-w4a" title="Delete task">🗑</button></div><div class="item" id="r-w4b" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Turnover reasons</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-w4b" title="Priority 1">1</button><button class="pri-btn p2" id="p2-w4b" title="Priority 2">2</button><button class="pri-btn p3" id="p3-w4b" title="Priority 3">3</button></div><button class="move-btn" id="mb-w4b" title="Move task">⇕</button><button class="del-btn" id="db-w4b" title="Delete task">🗑</button></div><div class="item" id="r-w5" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Share with Elizabeth</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-w5" title="Priority 1">1</button><button class="pri-btn p2" id="p2-w5" title="Priority 2">2</button><button class="pri-btn p3" id="p3-w5" title="Priority 3">3</button></div><button class="move-btn" id="mb-w5" title="Move task">⇕</button><button class="del-btn" id="db-w5" title="Delete task">🗑</button></div><div class="drop-zone"></div></div><div class="sec"><div class="sec-head">Personal / Professional Development</div><div class="item" id="r-pd1" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Uplevel</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-pd1" title="Priority 1">1</button><button class="pri-btn p2" id="p2-pd1" title="Priority 2">2</button><button class="pri-btn p3" id="p3-pd1" title="Priority 3">3</button></div><button class="move-btn" id="mb-pd1" title="Move task">⇕</button><button class="del-btn" id="db-pd1" title="Delete task">🗑</button></div><div class="item" id="r-pd2" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">To buy myself — more time &amp; get in control</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-pd2" title="Priority 1">1</button><button class="pri-btn p2" id="p2-pd2" title="Priority 2">2</button><button class="pri-btn p3" id="p3-pd2" title="Priority 3">3</button></div><button class="move-btn" id="mb-pd2" title="Move task">⇕</button><button class="del-btn" id="db-pd2" title="Delete task">🗑</button></div><div class="item" id="r-pd3" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Answers &amp; output oriented</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-pd3" title="Priority 1">1</button><button class="pri-btn p2" id="p2-pd3" title="Priority 2">2</button><button class="pri-btn p3" id="p3-pd3" title="Priority 3">3</button></div><button class="move-btn" id="mb-pd3" title="Move task">⇕</button><button class="del-btn" id="db-pd3" title="Delete task">🗑</button></div><div class="item" id="r-pd4" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Extraordinary teaming slides (share with KK)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-pd4" title="Priority 1">1</button><button class="pri-btn p2" id="p2-pd4" title="Priority 2">2</button><button class="pri-btn p3" id="p3-pd4" title="Priority 3">3</button></div><button class="move-btn" id="mb-pd4" title="Move task">⇕</button><button class="del-btn" id="db-pd4" title="Delete task">🗑</button></div><div class="drop-zone"></div></div><div class="sec"><div class="sec-head">Meeting Notes: Emily, Kendra &amp; Kara</div><div class="item" id="r-m1" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Timeline → DB ownership &amp; reasons randomized decision</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m1" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m1" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m1" title="Priority 3">3</button></div><button class="move-btn" id="mb-m1" title="Move task">⇕</button><button class="del-btn" id="db-m1" title="Delete task">🗑</button></div><div class="item" id="r-m1a" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Coding survey → reasons randomized</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m1a" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m1a" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m1a" title="Priority 3">3</button></div><button class="move-btn" id="mb-m1a" title="Move task">⇕</button><button class="del-btn" id="db-m1a" title="Delete task">🗑</button></div><div class="item" id="r-m1b" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">QC survey</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m1b" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m1b" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m1b" title="Priority 3">3</button></div><button class="move-btn" id="mb-m1b" title="Move task">⇕</button><button class="del-btn" id="db-m1b" title="Delete task">🗑</button></div><div class="item" id="r-m1c" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Attribute before survey load</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m1c" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m1c" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m1c" title="Priority 3">3</button></div><button class="move-btn" id="mb-m1c" title="Move task">⇕</button><button class="del-btn" id="db-m1c" title="Delete task">🗑</button></div><div class="item" id="r-m1d" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">WWES grid — can we leverage?</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m1d" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m1d" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m1d" title="Priority 3">3</button></div><button class="move-btn" id="mb-m1d" title="Move task">⇕</button><button class="del-btn" id="db-m1d" title="Delete task">🗑</button></div><div class="item" id="r-m1e" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Excel file build → use Claude</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m1e" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m1e" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m1e" title="Priority 3">3</button></div><button class="move-btn" id="mb-m1e" title="Move task">⇕</button><button class="del-btn" id="db-m1e" title="Delete task">🗑</button></div><div class="item" id="r-m2" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Launch timing → aligned w/ leads (needs to be communicated)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m2" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m2" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m2" title="Priority 3">3</button></div><button class="move-btn" id="mb-m2" title="Move task">⇕</button><button class="del-btn" id="db-m2" title="Delete task">🗑</button></div><div class="item" id="r-m3" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Validate existing access for dashboard today</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m3" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m3" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m3" title="Priority 3">3</button></div><button class="move-btn" id="mb-m3" title="Move task">⇕</button><button class="del-btn" id="db-m3" title="Delete task">🗑</button></div><div class="item" id="r-m4" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Validate if there's an audit trail capability in Claude</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m4" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m4" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m4" title="Priority 3">3</button></div><button class="move-btn" id="mb-m4" title="Move task">⇕</button><button class="del-btn" id="db-m4" title="Delete task">🗑</button></div><div class="item" id="r-m5" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Output options: 1) Raw verbatims &gt; Tableau | 2) Synthesized themes &gt; Claude</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m5" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m5" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m5" title="Priority 3">3</button></div><button class="move-btn" id="mb-m5" title="Move task">⇕</button><button class="del-btn" id="db-m5" title="Delete task">🗑</button></div><div class="item" id="r-m6" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Check survey intro language aligns to what we're doing</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m6" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m6" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m6" title="Priority 3">3</button></div><button class="move-btn" id="mb-m6" title="Move task">⇕</button><button class="del-btn" id="db-m6" title="Delete task">🗑</button></div><div class="item" id="r-m7" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">What data is shared with who? (current vs. future state → single slide)</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m7" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m7" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m7" title="Priority 3">3</button></div><button class="move-btn" id="mb-m7" title="Move task">⇕</button><button class="del-btn" id="db-m7" title="Delete task">🗑</button></div><div class="item" id="r-m7a" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Quantitative</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m7a" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m7a" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m7a" title="Priority 3">3</button></div><button class="move-btn" id="mb-m7a" title="Move task">⇕</button><button class="del-btn" id="db-m7a" title="Delete task">🗑</button></div><div class="item" id="r-m7b" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Verbatims synthesized</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m7b" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m7b" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m7b" title="Priority 3">3</button></div><button class="move-btn" id="mb-m7b" title="Move task">⇕</button><button class="del-btn" id="db-m7b" title="Delete task">🗑</button></div><div class="item" id="r-m7c" draggable="true" style="padding-left: 30px;"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">Verbatims raw</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m7c" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m7c" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m7c" title="Priority 3">3</button></div><button class="move-btn" id="mb-m7c" title="Move task">⇕</button><button class="del-btn" id="db-m7c" title="Delete task">🗑</button></div><div class="item" id="r-m8" draggable="true"><span class="drag-handle" title="Drag to reorder">⋮⋮</span><div class="box"><span class="ck">✓</span></div><span class="lbl">What is the current state intro language?</span><div class="pri-wrap"><button class="pri-btn p1" id="p1-m8" title="Priority 1">1</button><button class="pri-btn p2" id="p2-m8" title="Priority 2">2</button><button class="pri-btn p3" id="p3-m8" title="Priority 3">3</button></div><button class="move-btn" id="mb-m8" title="Move task">⇕</button><button class="del-btn" id="db-m8" title="Delete task">🗑</button></div><div class="drop-zone"></div></div></div>
+  <div class="completed-banner" id="all-done-banner">
+    <div class="icon">✓</div>All done — great work!
+  </div>
+</div>
+
+<div class="right-col">
+  <div class="right-section-header">👥 Team tracker</div>
+  <div id="dr-root"><div class="dr-card"><div class="dr-head"><div style="display:flex;align-items:center;gap:8px"><div class="dr-avatar" style="background:#E6F1FB;color:#0C447C">CG</div><span class="dr-name">Chirag G</span></div><button class="dr-add">+ Add</button></div><div class="dr-body dr-items" id="dr-items-chirag-g"><div class="dr-empty" id="dr-empty-chirag-g">Nothing tracked yet — or drag a task here</div><div class="dr-input-row" id="dr-input-chirag-g" style="display: none;"><input type="text" placeholder="What are they working on?" id="dr-inp-chirag-g"><button>Add</button></div></div></div><div class="dr-card"><div class="dr-head"><div style="display:flex;align-items:center;gap:8px"><div class="dr-avatar" style="background:#E1F5EE;color:#085041">JP</div><span class="dr-name">Jagoda P</span></div><button class="dr-add">+ Add</button></div><div class="dr-body dr-items" id="dr-items-jagoda-p"><div class="dr-empty" id="dr-empty-jagoda-p">Nothing tracked yet — or drag a task here</div><div class="dr-input-row" id="dr-input-jagoda-p" style="display: none;"><input type="text" placeholder="What are they working on?" id="dr-inp-jagoda-p"><button>Add</button></div></div></div><div class="dr-card"><div class="dr-head"><div style="display:flex;align-items:center;gap:8px"><div class="dr-avatar" style="background:#FAEEDA;color:#633806">SZ</div><span class="dr-name">Szymon Z</span></div><button class="dr-add">+ Add</button></div><div class="dr-body dr-items" id="dr-items-szymon-z"><div class="dr-empty" id="dr-empty-szymon-z">Nothing tracked yet — or drag a task here</div><div class="dr-input-row" id="dr-input-szymon-z" style="display: none;"><input type="text" placeholder="What are they working on?" id="dr-inp-szymon-z"><button>Add</button></div></div></div><div class="dr-card"><div class="dr-head"><div style="display:flex;align-items:center;gap:8px"><div class="dr-avatar" style="background:#EEEDFE;color:#3C3489">EM</div><span class="dr-name">Ewelina M</span></div><button class="dr-add">+ Add</button></div><div class="dr-body dr-items" id="dr-items-ewelina-m"><div class="dr-empty" id="dr-empty-ewelina-m">Nothing tracked yet — or drag a task here</div><div class="dr-input-row" id="dr-input-ewelina-m" style="display: none;"><input type="text" placeholder="What are they working on?" id="dr-inp-ewelina-m"><button>Add</button></div></div></div></div>
+  <div class="right-section-header" style="margin-top:24px">💬 Items for PD chats</div>
+  <div class="pd-card">
+    <div class="pd-body" id="pd-body">
+      <div class="dr-empty" id="pd-empty">Nothing added yet — or drag a task here</div>
+      <div class="dr-input-row" id="pd-input-row" style="display:none">
+        <input type="text" id="pd-inp" placeholder="Add an item...">
+        <button onclick="addPdItem()">Add</button>
+      </div>
+    </div>
+    <div class="pd-footer">
+      <button class="dr-add" onclick="togglePdInput()">+ Add item</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const todoData=[
+{title:"Communications / Emails",items:[
+{id:"c1",t:"Respond to Mariana Souto"},{id:"c2",t:"Respond to Dorota Moronska"},
+{id:"c3",t:"Email Emily re: AI / Archie experience — 1) What went wrong? 2) What would we have done better?"},
+{id:"c4",t:"Mallory questions",subs:[
+{id:"c4a",t:"Is there N threshold functionality in Claude?"},
+{id:"c4b",t:"Security options in Claude (reference conversation with Nick)"},
+{id:"c4c",t:"What are the identifiability considerations we need to have?"},
+{id:"c4d",t:"Do we need to go through Archie?"},
+{id:"c4e",t:"Can we lock down some pieces but not others?"},
+]},{id:"c5",t:"Marta — Claude skill notes, transcript & recording skill"},
+]},
+{title:"People / Meetings",items:[
+{id:"p1",t:"Time w/ Marta on Yield"},
+{id:"p2",t:"PD chats — 1) go forward if QC'd 2) Extraordinary Teaming 3) Chirag: normal hours?"},
+{id:"p3",t:"Jateen — end of June, PII and risk review process"},
+{id:"p4",t:"Reporting in Workday convo (w/ April)"},
+{id:"p5",t:"More time with Gaurav — Alteryx > SQL conversation"},
+]},
+{title:"Data / Analytics Work",items:[
+{id:"d1",t:"Chirag",subs:[
+{id:"d1a",t:"Tiffany request"},{id:"d1b",t:"Katie request"},
+{id:"d1c",t:"Active/on leave & terminated compare",subs2:[
+{id:"d1c1",t:"Compare to extracts"},{id:"d1c2",t:"Search"},
+{id:"d1c3",t:"Highlight necessary gaps"},{id:"d1c4",t:"Old questions to new question map (from export)"},
+]},{id:"d1d",t:"By office — vol/invol by level (H1/H2)"},
+]},
+{id:"d2",t:"Jagoda",subs:[
+{id:"d2a",t:"Ratings tables from Visier"},{id:"d2b",t:"Industry ratings (June)"},
+{id:"d2c",t:"AP pipeline"},{id:"d2d",t:"MBA ratings — Chris Riha (June)"},{id:"d2e",t:"Brad — turnover questions"},
+]},
+{id:"d3",t:"Szymon",subs:[
+{id:"d3a",t:"Diversity summaries (June)"},{id:"d3b",t:"EEO Reporting"},
+{id:"d3c",t:"Membership list updates"},{id:"d3d",t:"Affinity group flat file into Visier membership list connection"},
+]},
+{id:"d4",t:"Workday Connect into Visier",subs:[{id:"d4a",t:"Attrition category"},{id:"d4b",t:"Diversity (affinity) groups"}]},
+{id:"d5",t:"NA leave questions"},{id:"d6",t:"Lauren — partner eligibility → check follow-up"},
+{id:"d7",t:"HR slides revisions (2 slides for HRM HRBP meeting)"},{id:"d8",t:"Hire source issue"},
+{id:"d9",t:"Claude for data dictionary?"},{id:"d10",t:"Update workplan"},
+{id:"d11",t:"Pull Wizard of Oz test"},{id:"d12",t:"Employee level table to Tolu for Extraordinary Teaming"},
+]},
+{title:"Project / Workstream Items",items:[
+{id:"w1",t:"Departure Survey",subs:[
+{id:"w1a",t:"Slide addition: Why Now? (↑ voluntary attrition / business reasons)"},
+{id:"w1b",t:"Outline Claude security options for KK, EG, KV"},
+]},
+{id:"w2",t:"PEG Integration — scope, ownership, Deepak's role?"},
+{id:"w3",t:"Book more time w/ Gaurav (attrition) → SAL"},
+{id:"w4",t:"D definition updates",subs:[{id:"w4a",t:"Leave (quick wins)"},{id:"w4b",t:"Turnover reasons"}]},
+{id:"w5",t:"Share with Elizabeth"},
+]},
+{title:"Personal / Professional Development",items:[
+{id:"pd1",t:"Uplevel"},{id:"pd2",t:"To buy myself — more time & get in control"},
+{id:"pd3",t:"Answers & output oriented"},{id:"pd4",t:"Extraordinary teaming slides (share with KK)"},
+]},
+{title:"Meeting Notes: Emily, Kendra & Kara",items:[
+{id:"m1",t:"Timeline → DB ownership & reasons randomized decision",subs:[
+{id:"m1a",t:"Coding survey → reasons randomized"},{id:"m1b",t:"QC survey"},
+{id:"m1c",t:"Attribute before survey load"},{id:"m1d",t:"WWES grid — can we leverage?"},
+{id:"m1e",t:"Excel file build → use Claude"},
+]},
+{id:"m2",t:"Launch timing → aligned w/ leads (needs to be communicated)"},
+{id:"m3",t:"Validate existing access for dashboard today"},
+{id:"m4",t:"Validate if there's an audit trail capability in Claude"},
+{id:"m5",t:"Output options: 1) Raw verbatims > Tableau | 2) Synthesized themes > Claude"},
+{id:"m6",t:"Check survey intro language aligns to what we're doing"},
+{id:"m7",t:"What data is shared with who? (current vs. future state → single slide)",subs:[
+{id:"m7a",t:"Quantitative"},{id:"m7b",t:"Verbatims synthesized"},{id:"m7c",t:"Verbatims raw"},
+]},
+{id:"m8",t:"What is the current state intro language?"},
+]},
+];
+
+const directReports=[
+{name:"Chirag G",initials:"CG",color:"#E6F1FB",textColor:"#0C447C"},
+{name:"Jagoda P",initials:"JP",color:"#E1F5EE",textColor:"#085041"},
+{name:"Szymon Z",initials:"SZ",color:"#FAEEDA",textColor:"#633806"},
+{name:"Ewelina M",initials:"EM",color:"#EEEDFE",textColor:"#3C3489"},
+];
+
+const checked={},priority={};
+let showDone=false,idCounter=1000,drIdCounter=5000,pdIdCounter=9000;
+const sectionContainers=[],sectionTitles=[];
+let activePopoverItemId=null,dragId=null,dragType=null;
+const globalPop=document.getElementById('global-popover');
+
+function closePopover(){globalPop.classList.remove('open');activePopoverItemId=null;}
+document.addEventListener('click',e=>{if(!globalPop.contains(e.target))closePopover();});
+
+function allIds(){const ids=[];document.querySelectorAll('#todo-root .item').forEach(el=>ids.push(el.id.replace('r-','')));return ids;}
+
+function updateProgress(){
+  const ids=allIds(),done=ids.filter(id=>checked[id]).length;
+  document.getElementById('plabel').textContent=done+' of '+ids.length+' completed';
+  document.getElementById('pbar').style.width=Math.round(done/ids.length*100)+'%';
+}
+
+function updateSection(wrap){
+  if(!wrap||!wrap.classList.contains('sec'))return;
+  const items=[...wrap.querySelectorAll('.item')];
+  if(!items.length){wrap.classList.add('sec-hidden');checkAllDone();return;}
+  const allDone=items.every(el=>checked[el.id.replace('r-','')]);
+  if(allDone&&!showDone){setTimeout(()=>{wrap.classList.add('sec-hidden');checkAllDone();},400);}
+  else{wrap.classList.remove('sec-hidden');checkAllDone();}
+}
+
+function checkAllDone(){
+  const all=[...document.querySelectorAll('#todo-root .sec')];
+  document.getElementById('all-done-banner').style.display=(all.length&&all.every(s=>s.classList.contains('sec-hidden')))?'block':'none';
+}
+
+function toggleCheck(id,el,e){
+  e.stopPropagation();
+  checked[id]=!checked[id];
+  if(checked[id]){el.classList.add('done');if(showDone)el.classList.add('show-done');}
+  else{el.classList.remove('done');el.classList.remove('show-done');}
+  updateProgress();updateSection(el.closest('.sec'));
+}
+
+function deleteItem(id,el,e){
+  e.stopPropagation();
+  const wrap=el.closest('.sec');
+  el.classList.add('deleting');
+  setTimeout(()=>{
+    el.remove();delete checked[id];delete priority[id];
+    updateProgress();updateSection(wrap);
+  },240);
+}
+
+function toggleShowDone(){
+  showDone=!showDone;
+  document.querySelectorAll('#todo-root .item.done').forEach(el=>{showDone?el.classList.add('show-done'):el.classList.remove('show-done');});
+  document.getElementById('toggle-btn').textContent=showDone?'Hide done':'Show done';
+  if(showDone){document.querySelectorAll('#todo-root .sec.sec-hidden').forEach(s=>s.classList.remove('sec-hidden'));document.getElementById('all-done-banner').style.display='none';}
+  else document.querySelectorAll('#todo-root .sec').forEach(w=>updateSection(w));
+}
+
+function setPriority(id,p,e){
+  e.stopPropagation();
+  priority[id]=(priority[id]===p)?null:p;
+  [1,2,3].forEach(n=>{const b=document.getElementById('p'+n+'-'+id);if(b)b.classList.toggle('active',priority[id]===n);});
+}
+
+function openMovePopover(id,btn,e){
+  e.stopPropagation();
+  if(activePopoverItemId===id){closePopover();return;}
+  activePopoverItemId=id;
+  const currentWrap=document.getElementById('r-'+id).closest('.sec');
+  globalPop.innerHTML='<div class="move-popover-label">Move to section</div>';
+  sectionContainers.forEach((wrap,i)=>{
+    const opt=document.createElement('div');
+    opt.className='move-option'+(wrap===currentWrap?' current':'');
+    opt.textContent=sectionTitles[i];
+    if(wrap!==currentWrap){opt.addEventListener('click',ev=>{ev.stopPropagation();moveTaskToSection(id,wrap,currentWrap);closePopover();});}
+    globalPop.appendChild(opt);
+  });
+  const sep=document.createElement('div');sep.className='move-option sep';sep.textContent='Send to tracker';
+  globalPop.appendChild(sep);
+  directReports.forEach(dr=>{
+    const opt=document.createElement('div');opt.className='move-option';opt.textContent=dr.name;
+    opt.addEventListener('click',ev=>{ev.stopPropagation();moveTaskToTracker(id,dr.name);closePopover();});
+    globalPop.appendChild(opt);
+  });
+  const pdOpt=document.createElement('div');pdOpt.className='move-option';pdOpt.textContent='PD chats';
+  pdOpt.addEventListener('click',ev=>{ev.stopPropagation();moveTaskToPd(id);closePopover();});
+  globalPop.appendChild(pdOpt);
+  const rect=btn.getBoundingClientRect();
+  const scrollTop=window.pageYOffset||document.documentElement.scrollTop;
+  const popW=210;let left=rect.right+(window.pageXOffset||0)-popW;if(left<8)left=8;
+  globalPop.style.top=(rect.bottom+scrollTop+4)+'px';globalPop.style.left=left+'px';
+  globalPop.classList.add('open');
+}
+
+function moveTaskToSection(id,targetWrap,sourceWrap){
+  const el=document.getElementById('r-'+id);
+  el.classList.add('new-flash');
+  const dz=targetWrap.querySelector('.drop-zone');if(dz)dz.before(el);else targetWrap.appendChild(el);
+  targetWrap.classList.remove('sec-hidden');
+  updateSection(sourceWrap);updateSection(targetWrap);updateProgress();
+}
+
+function moveTaskToTracker(id,name){
+  const el=document.getElementById('r-'+id);
+  const text=el.querySelector('.lbl').textContent;
+  const sourceWrap=el.closest('.sec');
+  el.remove();delete checked[id];delete priority[id];
+  updateSection(sourceWrap);updateProgress();addDrItemDirect(name,text);
+}
+
+function moveTaskToPd(id){
+  const el=document.getElementById('r-'+id);
+  const text=el.querySelector('.lbl').textContent;
+  const sourceWrap=el.closest('.sec');
+  el.remove();delete checked[id];delete priority[id];
+  updateSection(sourceWrap);updateProgress();addPdItemDirect(text);
+}
+
+function setupItemDrag(el,id){
+  el.setAttribute('draggable','true');
+  el.addEventListener('dragstart',e=>{
+    dragId=id;dragType='todo';el.classList.add('dragging');
+    e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id);
+  });
+  el.addEventListener('dragend',()=>{
+    el.classList.remove('dragging');
+    document.querySelectorAll('.drop-zone.drag-over,.dr-body.drag-over,.pd-body.drag-over').forEach(z=>z.classList.remove('drag-over'));
+  });
+}
+
+function mkItem(it,indent){
+  const el=document.createElement('div');el.className='item';el.id='r-'+it.id;
+  if(indent)el.style.paddingLeft=(12+indent)+'px';
+  el.innerHTML=
+    '<span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>'+
+    '<div class="box"><span class="ck">&#10003;</span></div>'+
+    '<span class="lbl">'+it.t+'</span>'+
+    '<div class="pri-wrap">'+
+      '<button class="pri-btn p1" id="p1-'+it.id+'" title="Priority 1">1</button>'+
+      '<button class="pri-btn p2" id="p2-'+it.id+'" title="Priority 2">2</button>'+
+      '<button class="pri-btn p3" id="p3-'+it.id+'" title="Priority 3">3</button>'+
+    '</div>'+
+    '<button class="move-btn" id="mb-'+it.id+'" title="Move task">&#8661;</button>'+
+    '<button class="del-btn" id="db-'+it.id+'" title="Delete task">&#128465;</button>';
+  el.querySelector('.box').addEventListener('click',e=>toggleCheck(it.id,el,e));
+  el.querySelector('.lbl').addEventListener('click',e=>toggleCheck(it.id,el,e));
+  [1,2,3].forEach(n=>el.querySelector('#p'+n+'-'+it.id).addEventListener('click',e=>setPriority(it.id,n,e)));
+  el.querySelector('#mb-'+it.id).addEventListener('click',e=>openMovePopover(it.id,el.querySelector('#mb-'+it.id),e));
+  el.querySelector('#db-'+it.id).addEventListener('click',e=>deleteItem(it.id,el,e));
+  setupItemDrag(el,it.id);
+  return el;
+}
+
+function setupDropZone(dz,targetWrap){
+  dz.addEventListener('dragover',e=>{if(dragType!=='todo')return;e.preventDefault();dz.classList.add('drag-over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+  dz.addEventListener('drop',e=>{
+    e.preventDefault();dz.classList.remove('drag-over');
+    if(dragType!=='todo'||!dragId)return;
+    const el=document.getElementById('r-'+dragId);
+    const sourceWrap=el.closest('.sec');
+    el.classList.add('new-flash');
+    dz.before(el);targetWrap.classList.remove('sec-hidden');
+    updateSection(sourceWrap);updateSection(targetWrap);updateProgress();
+    dragId=null;dragType=null;
+  });
+}
+
+function addTask(){
+  const input=document.getElementById('new-task-input');
+  const secIdx=parseInt(document.getElementById('sec-pick').value);
+  const text=input.value.trim();if(!text)return;
+  const id='dyn-'+(idCounter++);
+  const wrap=sectionContainers[secIdx];
+  const el=mkItem({id,t:text},0);el.classList.add('new-flash');
+  const dz=wrap.querySelector('.drop-zone');if(dz)dz.before(el);else wrap.appendChild(el);
+  wrap.classList.remove('sec-hidden');
+  input.value='';input.focus();updateProgress();checkAllDone();
+}
+
+function toggleNewSection(){
+  const row=document.getElementById('new-sec-row');row.classList.toggle('visible');
+  if(row.classList.contains('visible'))document.getElementById('new-sec-input').focus();
+  else document.getElementById('new-sec-input').value='';
+}
+
+function addSection(){
+  const input=document.getElementById('new-sec-input');const name=input.value.trim();if(!name)return;
+  const wrap=document.createElement('div');wrap.className='sec';
+  wrap.innerHTML='<div class="sec-head">'+name+'</div>';
+  const dz=document.createElement('div');dz.className='drop-zone';
+  wrap.appendChild(dz);setupDropZone(dz,wrap);
+  document.getElementById('todo-root').appendChild(wrap);
+  sectionContainers.push(wrap);sectionTitles.push(name);
+  const pick=document.getElementById('sec-pick');
+  const opt=document.createElement('option');opt.value=sectionContainers.length-1;opt.textContent=name;
+  pick.appendChild(opt);pick.value=sectionContainers.length-1;
+  input.value='';toggleNewSection();wrap.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+document.getElementById('new-task-input').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
+document.getElementById('new-sec-input').addEventListener('keydown',e=>{if(e.key==='Enter')addSection();});
+
+const todoRoot=document.getElementById('todo-root'),pick=document.getElementById('sec-pick');
+todoData.forEach((sec,i)=>{
+  const opt=document.createElement('option');opt.value=i;opt.textContent=sec.title;pick.appendChild(opt);
+  const wrap=document.createElement('div');wrap.className='sec';
+  wrap.innerHTML='<div class="sec-head">'+sec.title+'</div>';
+  sec.items.forEach(it=>{
+    wrap.appendChild(mkItem(it,0));
+    if(it.subs){it.subs.forEach(sub=>{wrap.appendChild(mkItem(sub,18));if(sub.subs2)sub.subs2.forEach(s2=>wrap.appendChild(mkItem(s2,36)));});}
+  });
+  const dz=document.createElement('div');dz.className='drop-zone';
+  wrap.appendChild(dz);setupDropZone(dz,wrap);
+  todoRoot.appendChild(wrap);sectionContainers.push(wrap);sectionTitles.push(sec.title);
+});
+updateProgress();
+
+function drKey(name){return name.replace(/\s/g,'-').toLowerCase();}
+
+function setupTrackerDrop(body,name,isPd){
+  body.addEventListener('dragover',e=>{if(dragType!=='todo')return;e.preventDefault();body.classList.add('drag-over');});
+  body.addEventListener('dragleave',e=>{if(!body.contains(e.relatedTarget))body.classList.remove('drag-over');});
+  body.addEventListener('drop',e=>{
+    e.preventDefault();body.classList.remove('drag-over');
+    if(dragType!=='todo'||!dragId)return;
+    const el=document.getElementById('r-'+dragId);
+    const text=el.querySelector('.lbl').textContent;
+    const sourceWrap=el.closest('.sec');
+    el.remove();delete checked[dragId];delete priority[dragId];
+    updateSection(sourceWrap);updateProgress();
+    if(isPd)addPdItemDirect(text);else addDrItemDirect(name,text);
+    dragId=null;dragType=null;
+  });
+}
+
+function addDrItemDirect(name,text){
+  const body=document.getElementById('dr-items-'+drKey(name));
+  const empty=document.getElementById('dr-empty-'+drKey(name));
+  if(empty)empty.style.display='none';
+  const id='dri-'+(drIdCounter++);
+  const row=document.createElement('div');row.className='dr-item';row.id=id;
+  row.innerHTML='<div class="dr-bullet"></div><span class="dr-lbl">'+text+'</span><button class="dr-del" title="Remove">&#10005;</button>';
+  row.querySelector('.dr-del').addEventListener('click',e=>{e.stopPropagation();removeDrItem(id,name);});
+  body.insertBefore(row,document.getElementById('dr-input-'+drKey(name)));
+}
+
+function addPdItemDirect(text){
+  const empty=document.getElementById('pd-empty');if(empty)empty.style.display='none';
+  const id='pdi-'+(pdIdCounter++);
+  const row=document.createElement('div');row.className='dr-item';row.id=id;
+  row.innerHTML='<div class="dr-bullet"></div><span class="dr-lbl">'+text+'</span><button class="dr-del" title="Remove">&#10005;</button>';
+  row.querySelector('.dr-del').addEventListener('click',e=>{
+    e.stopPropagation();row.remove();
+    const remaining=document.getElementById('pd-body').querySelectorAll('.dr-item');
+    const emp=document.getElementById('pd-empty');if(emp)emp.style.display=remaining.length===0?'block':'none';
+  });
+  document.getElementById('pd-body').insertBefore(row,document.getElementById('pd-input-row'));
+}
+
+function buildDrPanel(dr){
+  const card=document.createElement('div');card.className='dr-card';
+  const head=document.createElement('div');head.className='dr-head';
+  head.innerHTML='<div style="display:flex;align-items:center;gap:8px"><div class="dr-avatar" style="background:'+dr.color+';color:'+dr.textColor+'">'+dr.initials+'</div><span class="dr-name">'+dr.name+'</span></div>';
+  const addBtn=document.createElement('button');addBtn.className='dr-add';addBtn.textContent='+ Add';
+  addBtn.addEventListener('click',()=>toggleDrInput(dr.name));
+  head.appendChild(addBtn);card.appendChild(head);
+  const body=document.createElement('div');body.className='dr-body dr-items';body.id='dr-items-'+drKey(dr.name);
+  const empty=document.createElement('div');empty.className='dr-empty';empty.id='dr-empty-'+drKey(dr.name);
+  empty.textContent='Nothing tracked yet — or drag a task here';body.appendChild(empty);
+  const inputRow=document.createElement('div');inputRow.className='dr-input-row';inputRow.id='dr-input-'+drKey(dr.name);inputRow.style.display='none';
+  const inp=document.createElement('input');inp.type='text';inp.placeholder='What are they working on?';inp.id='dr-inp-'+drKey(dr.name);
+  const saveBtn=document.createElement('button');saveBtn.textContent='Add';
+  saveBtn.addEventListener('click',()=>addDrItem(dr.name));
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')addDrItem(dr.name);if(e.key==='Escape')toggleDrInput(dr.name);});
+  inputRow.appendChild(inp);inputRow.appendChild(saveBtn);body.appendChild(inputRow);
+  setupTrackerDrop(body,dr.name,false);
+  card.appendChild(body);return card;
+}
+
+function toggleDrInput(name){
+  const row=document.getElementById('dr-input-'+drKey(name));
+  const inp=document.getElementById('dr-inp-'+drKey(name));
+  const isOpen=row.style.display==='flex';
+  row.style.display=isOpen?'none':'flex';if(!isOpen)inp.focus();
+}
+
+function addDrItem(name){
+  const inp=document.getElementById('dr-inp-'+drKey(name));
+  const text=inp.value.trim();if(!text)return;
+  addDrItemDirect(name,text);inp.value='';inp.focus();
+}
+
+function removeDrItem(id,name){
+  const el=document.getElementById(id);if(el)el.remove();
+  const body=document.getElementById('dr-items-'+drKey(name));
+  const remaining=body.querySelectorAll('.dr-item');
+  const empty=document.getElementById('dr-empty-'+drKey(name));
+  if(empty)empty.style.display=remaining.length===0?'block':'none';
+}
+
+directReports.forEach(dr=>document.getElementById('dr-root').appendChild(buildDrPanel(dr)));
+setupTrackerDrop(document.getElementById('pd-body'),null,true);
+
+function togglePdInput(){
+  const row=document.getElementById('pd-input-row'),inp=document.getElementById('pd-inp');
+  const isOpen=row.style.display==='flex';row.style.display=isOpen?'none':'flex';if(!isOpen)inp.focus();
+}
+
+function addPdItem(){
+  const inp=document.getElementById('pd-inp');const text=inp.value.trim();if(!text)return;
+  addPdItemDirect(text);inp.value='';inp.focus();
+}
+
+document.getElementById('pd-inp').addEventListener('keydown',e=>{if(e.key==='Enter')addPdItem();if(e.key==='Escape')togglePdInput();});
+</script>
+
+
+</body></html>
